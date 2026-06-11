@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: rhel-ai-chat-quota
+  namespace: rhel-ai-chat
+spec:
+  hard:
+    # CPU limits
+    requests.cpu: "10"
+    limits.cpu: "20"
+    
+    # Memory limits
+    requests.memory: "20Gi"
+    limits.memory: "40Gi"
+    
+    # Storage limits
+    requests.storage: "10Gi"
+    
+    # Object counts
+    pods: "10"
+    services: "5"
+    routes.route.openshift.io: "3"
+    networkpolicies.networking.k8s.io: "5"
+    
+    # Persistent volume claims
+    persistentvolumeclaims: "3"
+    
+    # Secrets and ConfigMaps
+    secrets: "10"
+    configmaps: "10"

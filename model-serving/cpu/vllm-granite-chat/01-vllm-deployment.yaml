@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-cpu-server
+  namespace: rhel-ai-chat
+  labels:
+    app: vllm-cpu-server
+    component: model-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: vllm-cpu-server
+  template:
+    metadata:
+      labels:
+        app: vllm-cpu-server
+        component: model-server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: vllm-server
+        image: quay.io/rhoai/vllm:v0.6.2
+        args:
+        - --model
+        - ibm-granite/granite-3.0-2b-instruct
+        - --device
+        - cpu
+        - --port
+        - "8000"
+        - --chat-template
+        - template_chatml
+        - --disable-uvicorn-access-log
+        - --max-model-len=8192
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: HF_HOME
+          value: "/tmp/huggingface"
+        - name: VLLM_CPU_KVCACHE_SPACE
+          value: "4"
+        - name: OMP_NUM_THREADS
+          value: "4"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        resources:
+          requests:
+            cpu: "2"
+            memory: "6Gi"
+          limits:
+            cpu: "4"
+            memory: "12Gi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 1001
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: huggingface-cache
+          mountPath: /tmp/huggingface
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 180
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: huggingface-cache
+        emptyDir:
+          sizeLimit: 8Gi
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
