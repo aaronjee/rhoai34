@@ -19,6 +19,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: openwebui
         image: ghcr.io/open-webui/open-webui:main
@@ -44,6 +46,8 @@ spec:
             drop:
             - ALL
           readOnlyRootFilesystem: false  # Open WebUI needs write access
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           requests:
             cpu: 100m

@@ -7,6 +7,9 @@
 - **목적**: CPU 기반 환경에서 IBM Granite 3.0 2B 모델 서빙 및 웹 UI 제공
 - **구성요소**: vLLM (CPU 모드) + Open WebUI
 - **보안**: Pod Security Standards (restricted) 적용
+  - `seccompProfile: RuntimeDefault` 필수
+  - `runAsNonRoot: true` 필수
+  - OpenShift SCC 자동 UID/GID 할당
 - **리소스**: CPU 최적화된 설정
 
 ## 디렉토리 구조
@@ -126,8 +129,9 @@ oc apply -f *.yaml
 - **메모리 부족**: ResourceQuota 확인
 - **이미지 풀 실패**: 네트워크 연결 확인
 - **SCC 에러**: OpenShift는 UID/GID를 자동 할당하므로 `runAsUser`, `runAsGroup`, `fsGroup` 수동 설정 불가
+- **Pod Security 에러**: `restricted` 정책에서는 `seccompProfile` 필수 설정
 
-### Security Context Constraint (SCC) 오류 해결
+### Pod Security Standards & SCC 오류 해결
 ```bash
 # 기존 배포 정리
 oc delete deployment vllm-cpu-server -n rhel-ai-chat
