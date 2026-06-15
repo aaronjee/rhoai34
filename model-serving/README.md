@@ -50,7 +50,21 @@ model-serving/
 - **메모리**: 모델 크기에 맞춘 메모리 설정
 - **ResourceQuota**: 네임스페이스 레벨 리소스 제한
 
-## 배포 순서
+## 배포 방법
+
+### 자동 배포 (권장)
+```bash
+cd model-serving/cpu/vllm-granite-chat
+./deploy.sh
+```
+
+### 자동 제거
+```bash
+cd model-serving/cpu/vllm-granite-chat
+./undeploy.sh
+```
+
+### 수동 배포 순서
 
 1. **기본 인프라**
    ```bash
@@ -70,6 +84,15 @@ model-serving/
    oc apply -f 04-openwebui-service.yaml
    oc apply -f 05-route.yaml
    ```
+
+### 일괄 배포 명령어
+```bash
+# 디렉토리 전체 적용
+oc apply -f .
+
+# 또는 와일드카드 사용
+oc apply -f *.yaml
+```
 
 ## 검증
 
