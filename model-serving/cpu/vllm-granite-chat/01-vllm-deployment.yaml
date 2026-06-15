@@ -25,7 +25,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: vllm-server
-        image: registry.redhat.io/rhoai/odh-vllm-cpu-rhel9:v2.25.7-1780068934
+        image: registry.redhat.io/rhoai/vllm-cpu-rhel9:3.4.1-1780356811
         args:
         - --model
         - ibm-granite/granite-3.0-2b-instruct

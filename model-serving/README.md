@@ -34,7 +34,7 @@ model-serving/
 - **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
 
 ### vLLM 설정
-- **이미지**: `registry.redhat.io/rhoai/odh-vllm-cpu-rhel9:v2.25.7-1780068934` (Red Hat 공식 CPU 전용)
+- **이미지**: `registry.redhat.io/rhoai/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat 공식 CPU 전용, OpenShift AI 3.4.1)
 - **모델**: IBM Granite 3.0 2B Instruct
 - **디바이스**: CPU 전용 (`--device cpu`)
 - **보안**: 비특권 컨테이너, Pod Security Standards 준수
@@ -122,7 +122,7 @@ oc apply -f *.yaml
 
 - **CPU 전용 환경**: 추론 속도가 GPU 대비 느림
 - **모델 로딩 시간**: 2-3분 소요 가능 (초기 readiness probe 90초 대기)
-- **Red Hat 이미지**: 공식 지원되는 CPU 최적화된 vLLM 런타임 사용
+- **Red Hat 이미지**: OpenShift AI 3.4.1 공식 지원 CPU 최적화 vLLM 런타임 사용
 - **리소스 제한**: 동시 사용자 수 제한 가능
 - **인증 필요**: Red Hat 레지스트리 접근을 위한 Pull Secret 필요할 수 있음
 
