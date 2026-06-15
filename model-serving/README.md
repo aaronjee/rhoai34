@@ -34,9 +34,10 @@ model-serving/
 - **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
 
 ### vLLM 설정
+- **이미지**: `registry.redhat.io/rhoai/odh-vllm-cpu-rhel9:v2.25.7-1780068934` (Red Hat 공식 CPU 전용)
 - **모델**: IBM Granite 3.0 2B Instruct
 - **디바이스**: CPU 전용 (`--device cpu`)
-- **보안**: 비특권 컨테이너, 보안 컨텍스트 적용
+- **보안**: 비특권 컨테이너, Pod Security Standards 준수
 - **스토리지**: emptyDir 사용 (PVC 불필요)
 - **헬스체크**: readiness/liveness probe 설정
 
@@ -119,15 +120,20 @@ oc apply -f *.yaml
 
 ## 주의사항
 
-- CPU 전용 환경이므로 추론 속도가 GPU 대비 느림
-- 모델 로딩 시간이 길 수 있음 (초기 readiness probe 90초 대기)
-- 리소스 제한에 따라 동시 사용자 수 제한 가능
+- **CPU 전용 환경**: 추론 속도가 GPU 대비 느림
+- **모델 로딩 시간**: 2-3분 소요 가능 (초기 readiness probe 90초 대기)
+- **Red Hat 이미지**: 공식 지원되는 CPU 최적화된 vLLM 런타임 사용
+- **리소스 제한**: 동시 사용자 수 제한 가능
+- **인증 필요**: Red Hat 레지스트리 접근을 위한 Pull Secret 필요할 수 있음
 
 ## 트러블슈팅
 
 ### vLLM Pod 시작 실패
 - **메모리 부족**: ResourceQuota 확인
-- **이미지 풀 실패**: 네트워크 연결 확인
+- **이미지 풀 실패**: 
+  - 네트워크 연결 확인
+  - Red Hat 레지스트리 인증 확인: `oc get secret -n rhel-ai-chat | grep pull`
+  - Pull Secret 생성: `oc create secret docker-registry rh-pull-secret --docker-server=registry.redhat.io --docker-username=<username> --docker-password=<token>`
 - **SCC 에러**: OpenShift는 UID/GID를 자동 할당하므로 `runAsUser`, `runAsGroup`, `fsGroup` 수동 설정 불가
 - **Pod Security 에러**: `restricted` 정책에서는 `seccompProfile` 필수 설정
 
