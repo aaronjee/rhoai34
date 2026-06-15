@@ -27,6 +27,9 @@ model-serving/
 
 ## 주요 특징
 
+### OpenShift AI 통합
+- **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
+
 ### vLLM 설정
 - **모델**: IBM Granite 3.0 2B Instruct
 - **디바이스**: CPU 전용 (`--device cpu`)
