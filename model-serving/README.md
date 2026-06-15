@@ -40,7 +40,7 @@ model-serving/
 ### Open WebUI 설정
 - **인증**: 비활성화 (`WEBUI_AUTH=false`)
 - **API 연결**: vLLM 서비스와 자동 연결
-- **보안**: 보안 컨텍스트 적용
+- **보안**: OpenShift SCC 호환 보안 컨텍스트 적용
 
 ### 네트워크 보안
 - **Route**: TLS edge termination, HTTP → HTTPS 리다이렉트
@@ -123,8 +123,20 @@ oc apply -f *.yaml
 ## 트러블슈팅
 
 ### vLLM Pod 시작 실패
-- 메모리 부족: ResourceQuota 확인
-- 이미지 풀 실패: 네트워크 연결 확인
+- **메모리 부족**: ResourceQuota 확인
+- **이미지 풀 실패**: 네트워크 연결 확인
+- **SCC 에러**: OpenShift는 UID/GID를 자동 할당하므로 `runAsUser`, `runAsGroup`, `fsGroup` 수동 설정 불가
+
+### Security Context Constraint (SCC) 오류 해결
+```bash
+# 기존 배포 정리
+oc delete deployment vllm-cpu-server -n rhel-ai-chat
+oc delete deployment openwebui -n rhel-ai-chat
+
+# 수정된 manifest로 재배포
+oc apply -f 01-vllm-deployment.yaml
+oc apply -f 03-openwebui-deployment.yaml
+```
 
 ### Open WebUI 연결 실패
 - vLLM 서비스 상태 확인

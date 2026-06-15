@@ -21,11 +21,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001
-        runAsGroup: 1001
-        fsGroup: 1001
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - name: vllm-server
         image: quay.io/rhoai/vllm:v0.6.2
@@ -67,8 +62,6 @@ spec:
             - ALL
           readOnlyRootFilesystem: false
           runAsNonRoot: true
-          runAsUser: 1001
-          runAsGroup: 1001
         volumeMounts:
         - name: tmp-volume
           mountPath: /tmp
