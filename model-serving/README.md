@@ -22,7 +22,6 @@ model-serving/
 │       ├── 03-openwebui-deployment.yaml # Open WebUI 배포
 │       ├── 04-openwebui-service.yaml   # Open WebUI 서비스
 │       ├── 05-route.yaml               # OpenShift Route
-│       ├── 06-networkpolicy.yaml       # 네트워크 정책
 │       └── 07-resourcequota.yaml       # 리소스 쿼터
 ```
 
@@ -41,7 +40,6 @@ model-serving/
 - **보안**: 보안 컨텍스트 적용
 
 ### 네트워크 보안
-- **NetworkPolicy**: vLLM ↔ Open WebUI 간 통신만 허용
 - **Route**: TLS edge termination, HTTP → HTTPS 리다이렉트
 
 ### 리소스 관리
@@ -61,7 +59,6 @@ model-serving/
    ```bash
    oc apply -f 01-vllm-deployment.yaml
    oc apply -f 02-vllm-service.yaml
-   oc apply -f 06-networkpolicy.yaml
    ```
 
 3. **Open WebUI 배포**
@@ -105,7 +102,6 @@ model-serving/
 
 ### Open WebUI 연결 실패
 - vLLM 서비스 상태 확인
-- NetworkPolicy 설정 확인
 - 환경변수 `OPENAI_API_BASE_URL` 확인
 
 ### 성능 이슈
