@@ -41,8 +41,8 @@ model-serving/
 - **배포 방식**: ServingRuntime + InferenceService (KServe 표준)
 - **런타임 이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server)
 - **모델 배포**: ModelCar OCI 레지스트리 방식
-- **모델 이미지**: `registry.redhat.io/rhelai1/modelcar-granite-8b-lab-v1:1.4.0`
-- **모델**: IBM Granite 8B Lab v1 (Red Hat AI 인증)
+- **모델 이미지**: `registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny:3.0`
+- **모델**: IBM Granite 4.0 Tiny (Red Hat 인증, CPU 최적화)
 - **디바이스**: CPU 전용 (`--device cpu`)
 - **프로토콜**: OpenAI 호환 API (v1)
 
@@ -147,8 +147,8 @@ oc apply -f *.yaml
 ## 주의사항
 
 - **CPU 전용 환경**: 추론 속도가 GPU 대비 느림
-- **모델 로딩 시간**: 3-5분 소요 가능 (8B 모델, 초기 다운로드 시간 포함)
-- **리소스 요구사항**: 최소 4 CPU, 12Gi 메모리 (8B 모델)
+- **모델 로딩 시간**: 1-2분 소요 (Tiny 모델, 초기 다운로드 시간 포함)
+- **리소스 요구사항**: 최소 2 CPU, 4Gi 메모리 (Tiny 모델, CPU 환경 최적화)
 - **Red Hat 인증 모델**: OpenShift AI 3.4.1 공식 지원, Red Hat 검증 완료
 - **ModelCar 방식**: OCI 레지스트리에서 모델 자동 다운로드 (초기 2-3분 소요)
 - **리소스 제한**: 동시 사용자 수 제한 가능
