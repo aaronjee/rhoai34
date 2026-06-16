@@ -6,7 +6,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: 'true'
   annotations:
-    openshift.io/display-name: "IBM Granite 3.0 2B Chat"
+    openshift.io/display-name: "IBM Granite 8B Lab v1"
     serving.kserve.io/deploymentMode: RawDeployment
 spec:
   predictor:
@@ -14,11 +14,11 @@ spec:
       modelFormat:
         name: vLLM
       runtime: vllm-cpu-x86-runtime
-      storageUri: oci://registry.redhat.io/rhai/modelcar-granite-3.0-2b-instruct:latest
+      storageUri: oci://registry.redhat.io/rhelai1/modelcar-granite-8b-lab-v1:1.4.0
       resources:
         requests:
-          cpu: '2'
-          memory: 6Gi
-        limits:
           cpu: '4'
           memory: 12Gi
+        limits:
+          cpu: '8'
+          memory: 24Gi
