@@ -39,6 +39,10 @@ spec:
           value: "OpenShift AI Chat"
         - name: DEFAULT_MODELS
           value: "granite-chat"
+        - name: WEBUI_SECRET_KEY
+          value: "openshift-ai-secret-key-change-in-production"
+        - name: DATA_DIR
+          value: "/tmp/data"
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
@@ -57,28 +61,13 @@ spec:
             memory: 512Mi
         volumeMounts:
         - name: data
-          mountPath: /app/backend/data
-        - name: tmp
-          mountPath: /tmp
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          mountPath: /tmp/data
       volumes:
       - name: data
         emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
       - name: tmp
         emptyDir: {}
       restartPolicy: Always
