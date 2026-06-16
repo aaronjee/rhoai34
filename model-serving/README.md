@@ -34,7 +34,7 @@ model-serving/
 - **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
 
 ### vLLM 설정
-- **이미지**: `registry.redhat.io/rhoai/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat 공식 CPU 전용, OpenShift AI 3.4.1)
+- **이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server, OpenShift AI 3.4.1)
 - **모델**: IBM Granite 3.0 2B Instruct
 - **디바이스**: CPU 전용 (`--device cpu`)
 - **보안**: 비특권 컨테이너, Pod Security Standards 준수
