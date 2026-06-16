@@ -6,7 +6,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: 'true'
   annotations:
-    openshift.io/display-name: "Facebook OPT-125M"
+    openshift.io/display-name: "SmolLM3 3B"
     serving.kserve.io/deploymentMode: RawDeployment
 spec:
   predictor:
@@ -14,19 +14,19 @@ spec:
       modelFormat:
         name: vLLM
       runtime: vllm-cpu-x86-runtime
-      storageUri: hf://facebook/opt-125m
+      storageUri: oci://registry.redhat.io/rhelai1/modelcar-smollm3-3b:1.5-1754500365
       resources:
         requests:
-          cpu: '1'
-          memory: 2Gi
-        limits:
           cpu: '2'
-          memory: 4Gi
+          memory: 6Gi
+        limits:
+          cpu: '4'
+          memory: 12Gi
       env:
       - name: VLLM_SKIP_WARMUP
         value: "true"
       - name: VLLM_CPU_KVCACHE_SPACE
-        value: "2"
+        value: "4"
       args:
-      - --max-model-len=2048
-      - --max-num-seqs=4
+      - --max-model-len=4096
+      - --max-num-seqs=8

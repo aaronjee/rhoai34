@@ -40,9 +40,9 @@ model-serving/
 ### vLLM 설정 (KServe + ModelCar)
 - **배포 방식**: ServingRuntime + InferenceService (KServe 표준)
 - **런타임 이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server)
-- **모델 배포**: Hugging Face 직접 다운로드 방식
-- **모델 URI**: `hf://facebook/opt-125m`
-- **모델**: Facebook OPT-125M (초소형, 125M 파라미터, CPU 전용 최적화)
+- **모델 배포**: Red Hat ModelCar OCI 레지스트리 방식
+- **모델 이미지**: `registry.redhat.io/rhelai1/modelcar-smollm3-3b:1.5-1754500365`
+- **모델**: SmolLM3 3B (소형, 3B 파라미터, CPU 환경 검증됨, 폐쇄망 지원)
 - **디바이스**: CPU 전용 (`--device cpu`)
 - **프로토콜**: OpenAI 호환 API (v1)
 
@@ -147,9 +147,10 @@ oc apply -f *.yaml
 ## 주의사항
 
 - **CPU 전용 환경**: 추론 속도가 GPU 대비 느림
-- **모델 로딩 시간**: 30초-1분 소요 (OPT-125M, 초기 다운로드 시간 포함)
-- **리소스 요구사항**: 최소 1 CPU, 2Gi 메모리 (초소형 모델, CPU 환경 최적화)
-- **최적화**: VLLM_SKIP_WARMUP=true, max-model-len=2048, KV 캐시 2GB
+- **모델 로딩 시간**: 2-3분 소요 (SmolLM3 3B, ModelCar OCI 다운로드 포함)
+- **리소스 요구사항**: 최소 2 CPU, 6Gi 메모리 (3B 모델, CPU 환경 최적화)
+- **최적화**: VLLM_SKIP_WARMUP=true, max-model-len=4096, KV 캐시 4GB
+- **폐쇄망 지원**: HuggingFace 연결 불필요, Red Hat 레지스트리만 사용
 - **Red Hat 인증 모델**: OpenShift AI 3.4.1 공식 지원, Red Hat 검증 완료
 - **ModelCar 방식**: OCI 레지스트리에서 모델 자동 다운로드 (초기 2-3분 소요)
 - **리소스 제한**: 동시 사용자 수 제한 가능
