@@ -36,9 +36,11 @@ spec:
         - name: DEFAULT_MODELS
           value: "granite-chat"
         - name: WEBUI_SECRET_KEY
-          value: "openshift-ai-secret-key-change-in-production"
+          value: "3kgrYRfMI5pYjLDNwb53wT-GZMQ30tKkzlBz_Nfw8aU="
         - name: DATA_DIR
           value: "/tmp/data"
+        - name: STATIC_DIR
+          value: "/tmp/static"
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
@@ -58,7 +60,11 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /tmp/data
+        - name: static
+          mountPath: /tmp/static
       volumes:
       - name: data
+        emptyDir: {}
+      - name: static
         emptyDir: {}
       restartPolicy: Always
