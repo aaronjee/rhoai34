@@ -6,7 +6,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: 'true'
   annotations:
-    openshift.io/display-name: "IBM Granite 4.0 Tiny"
+    openshift.io/display-name: "Facebook OPT-125M"
     serving.kserve.io/deploymentMode: RawDeployment
 spec:
   predictor:
@@ -14,11 +14,19 @@ spec:
       modelFormat:
         name: vLLM
       runtime: vllm-cpu-x86-runtime
-      storageUri: oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny:3.0
+      storageUri: hf://facebook/opt-125m
       resources:
         requests:
+          cpu: '1'
+          memory: 2Gi
+        limits:
           cpu: '2'
           memory: 4Gi
-        limits:
-          cpu: '4'
-          memory: 8Gi
+      env:
+      - name: VLLM_SKIP_WARMUP
+        value: "true"
+      - name: VLLM_CPU_KVCACHE_SPACE
+        value: "2"
+      args:
+      - --max-model-len=2048
+      - --max-num-seqs=4
