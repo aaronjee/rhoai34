@@ -24,8 +24,8 @@ echo "🔄 리소스 제거 중..."
 oc delete -f 05-route.yaml --ignore-not-found=true
 oc delete -f 04-openwebui-service.yaml --ignore-not-found=true
 oc delete -f 03-openwebui-deployment.yaml --ignore-not-found=true
-oc delete -f 02-vllm-service.yaml --ignore-not-found=true
-oc delete -f 01-vllm-deployment.yaml --ignore-not-found=true
+oc delete -f 02-inference-service.yaml --ignore-not-found=true
+oc delete -f 01-serving-runtime.yaml --ignore-not-found=true
 oc delete -f 07-resourcequota.yaml --ignore-not-found=true
 
 # 네임스페이스는 마지막에 제거

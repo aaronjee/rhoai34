@@ -20,8 +20,8 @@ model-serving/
 ├── cpu/
 │   └── vllm-granite-chat/
 │       ├── 00-namespace.yaml           # 네임스페이스 정의
-│       ├── 01-vllm-deployment.yaml     # vLLM CPU 배포
-│       ├── 02-vllm-service.yaml        # vLLM 서비스
+│       ├── 01-serving-runtime.yaml     # vLLM CPU ServingRuntime
+│       ├── 02-inference-service.yaml   # InferenceService (모델 배포)
 │       ├── 03-openwebui-deployment.yaml # Open WebUI 배포
 │       ├── 04-openwebui-service.yaml   # Open WebUI 서비스
 │       ├── 05-route.yaml               # OpenShift Route
@@ -33,13 +33,13 @@ model-serving/
 ### OpenShift AI 통합
 - **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
 
-### vLLM 설정
-- **이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server, OpenShift AI 3.4.1)
-- **모델**: IBM Granite 3.0 2B Instruct
+### vLLM 설정 (KServe 기반)
+- **배포 방식**: ServingRuntime + InferenceService (KServe 표준)
+- **이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server)
+- **모델**: IBM Granite 3.0 2B Instruct (Hugging Face에서 자동 다운로드)
 - **디바이스**: CPU 전용 (`--device cpu`)
-- **보안**: 비특권 컨테이너, Pod Security Standards 준수
-- **스토리지**: emptyDir 사용 (PVC 불필요)
-- **헬스체크**: readiness/liveness probe 설정
+- **런타임**: vLLM CPU (x86) ServingRuntime
+- **프로토콜**: OpenAI 호환 API (v1)
 
 ### Open WebUI 설정
 - **인증**: 비활성화 (`WEBUI_AUTH=false`)
@@ -76,10 +76,16 @@ cd model-serving/cpu/vllm-granite-chat
    oc apply -f 07-resourcequota.yaml
    ```
 
-2. **vLLM 배포**
+2. **모델 서빙 (KServe)**
    ```bash
-   oc apply -f 01-vllm-deployment.yaml
-   oc apply -f 02-vllm-service.yaml
+   # ServingRuntime 생성
+   oc apply -f 01-serving-runtime.yaml
+   
+   # InferenceService 배포 (모델 자동 다운로드 및 서빙)
+   oc apply -f 02-inference-service.yaml
+   
+   # InferenceService 준비 대기 (2-3분 소요)
+   oc wait --for=condition=Ready inferenceservice/granite-chat -n rhel-ai-chat --timeout=300s
    ```
 
 3. **Open WebUI 배포**
@@ -100,23 +106,38 @@ oc apply -f *.yaml
 
 ## 검증
 
-1. **Pod 상태 확인**
+1. **InferenceService 상태 확인**
+   ```bash
+   oc get inferenceservice -n rhel-ai-chat
+   # STATUS가 True여야 정상
+   ```
+
+2. **Pod 상태 확인**
    ```bash
    oc get pods -n rhel-ai-chat
+   # granite-chat-predictor-* Pod이 Running이어야 함
    ```
 
-2. **서비스 연결 확인**
+3. **서비스 확인**
    ```bash
    oc get svc -n rhel-ai-chat
+   # granite-chat-predictor 서비스 확인
    ```
 
-3. **Route URL 확인**
+4. **모델 API 테스트**
+   ```bash
+   # InferenceService 엔드포인트 확인
+   oc get inferenceservice granite-chat -n rhel-ai-chat -o jsonpath='{.status.url}'
+   
+   # 모델 목록 확인
+   curl http://granite-chat-predictor.rhel-ai-chat.svc.cluster.local:8080/v1/models
+   ```
+
+5. **Route URL 확인 및 웹 UI 접속**
    ```bash
    oc get route -n rhel-ai-chat
+   # Route URL로 접속하여 채팅 인터페이스 확인
    ```
-
-4. **웹 UI 접속**
-   - Route URL로 접속하여 채팅 인터페이스 확인
 
 ## 주의사항
 

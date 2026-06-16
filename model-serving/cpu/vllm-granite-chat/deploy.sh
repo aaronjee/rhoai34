@@ -18,10 +18,15 @@ oc apply -f 07-resourcequota.yaml
 echo "⏳ 네임스페이스 준비 완료 대기 중..."
 oc wait --for=condition=Active namespace/rhel-ai-chat --timeout=30s
 
-# 2. vLLM 서버 배포
-echo "🤖 vLLM 서버 배포 중..."
-oc apply -f 01-vllm-deployment.yaml
-oc apply -f 02-vllm-service.yaml
+# 2. 모델 서빙 (KServe)
+echo "🤖 ServingRuntime 생성 중..."
+oc apply -f 01-serving-runtime.yaml
+
+echo "📦 InferenceService 배포 중 (모델 다운로드 및 서빙)..."
+oc apply -f 02-inference-service.yaml
+
+echo "⏳ InferenceService 준비 대기 중 (최대 5분)..."
+oc wait --for=condition=Ready inferenceservice/granite-chat -n rhel-ai-chat --timeout=300s || echo "⚠️  타임아웃: 수동으로 상태 확인 필요"
 
 # 3. OpenWebUI 배포
 echo "🌐 Open WebUI 배포 중..."
