@@ -14,9 +14,7 @@ spec:
       modelFormat:
         name: vLLM
       runtime: vllm-cpu-x86-runtime
-      storage:
-        key: huggingface
-        path: ibm-granite/granite-3.0-2b-instruct
+      storageUri: oci://registry.redhat.io/rhai/modelcar-granite-3.0-2b-instruct:latest
       resources:
         requests:
           cpu: '2'

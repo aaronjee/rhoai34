@@ -32,13 +32,18 @@ model-serving/
 
 ### OpenShift AI 통합
 - **대시보드 연동**: `opendatahub.io/dashboard: 'true'` 라벨로 OpenShift AI Dashboard에서 관리
+- **ModelCar 배포**: OCI 레지스트리 기반 모델 배포로 성능 최적화
+  - 시작 시간 단축 (동일 모델 재다운로드 방지)
+  - 디스크 공간 절약 (컨테이너 이미지 캐싱)
+  - 모델 버전 관리 용이 (OCI 태그 활용)
 
-### vLLM 설정 (KServe 기반)
+### vLLM 설정 (KServe + ModelCar)
 - **배포 방식**: ServingRuntime + InferenceService (KServe 표준)
-- **이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server)
-- **모델**: IBM Granite 3.0 2B Instruct (Hugging Face에서 자동 다운로드)
+- **런타임 이미지**: `registry.redhat.io/rhaii/vllm-cpu-rhel9:3.4.1-1780356811` (Red Hat AI Inference Server)
+- **모델 배포**: ModelCar OCI 레지스트리 방식
+- **모델 이미지**: `registry.redhat.io/rhai/modelcar-granite-3.0-2b-instruct:latest`
+- **모델**: IBM Granite 3.0 2B Instruct (Red Hat 인증)
 - **디바이스**: CPU 전용 (`--device cpu`)
-- **런타임**: vLLM CPU (x86) ServingRuntime
 - **프로토콜**: OpenAI 호환 API (v1)
 
 ### Open WebUI 설정
@@ -143,7 +148,8 @@ oc apply -f *.yaml
 
 - **CPU 전용 환경**: 추론 속도가 GPU 대비 느림
 - **모델 로딩 시간**: 2-3분 소요 가능 (초기 readiness probe 90초 대기)
-- **Red Hat 이미지**: OpenShift AI 3.4.1 공식 지원 CPU 최적화 vLLM 런타임 사용
+- **Red Hat 인증 모델**: OpenShift AI 3.4.1 공식 지원, Red Hat 검증 완료
+- **ModelCar 방식**: OCI 레지스트리에서 모델 자동 다운로드 (초기 2-3분 소요)
 - **리소스 제한**: 동시 사용자 수 제한 가능
 - **인증 필요**: Red Hat 레지스트리 접근을 위한 Pull Secret 필요할 수 있음
 
