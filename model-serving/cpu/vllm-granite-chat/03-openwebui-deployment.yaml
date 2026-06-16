@@ -17,10 +17,6 @@ spec:
         app: openwebui
         component: frontend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - name: openwebui
         image: ghcr.io/open-webui/open-webui:main
@@ -64,10 +60,5 @@ spec:
           mountPath: /tmp/data
       volumes:
       - name: data
-        emptyDir: {}
-      securityContext:
-        fsGroup: 1000
-        runAsNonRoot: true
-      - name: tmp
         emptyDir: {}
       restartPolicy: Always
