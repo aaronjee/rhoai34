@@ -13,6 +13,15 @@ spec:
     opendatahub.io/kserve-runtime: vllm
     prometheus.io/path: /metrics
     prometheus.io/port: '8080'
+  builtInAdapter:
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
   containers:
     - args:
         - '--port=8080'
@@ -30,6 +39,14 @@ spec:
       ports:
         - containerPort: 8080
           protocol: TCP
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
   multiModel: false
   supportedModelFormats:
     - autoSelect: true
