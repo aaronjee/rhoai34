@@ -8,71 +8,102 @@
 
 - [ ] OpenShift AI 3.4 클러스터 접근 권한
 - [ ] Data Science Project 생성 완료
+- [ ] **Jupyter Workbench 생성 및 실행 중**
+  - Image: Standard Data Science (Python 3.11 이상)
+  - Container size: Small 이상
+  - Workbench 상태: Running
+  - **인터넷 연결 가능** (pip로 PyPI에서 패키지 자동 다운로드)
 - [ ] S3 호환 Object Storage Data Connection 설정 완료 (파이프라인 아티팩트 저장용)
 - [ ] Pipeline Server 활성화 (Project → Data Science Pipelines → Configure)
-- [ ] Jupyter Workbench 실행 중 (Python 3.11+)
-- [ ] 필수 Python 패키지 설치: `pip install -r requirements.txt`
 
 ## Quick Start
 
-### 1. 파일 다운로드 (1분)
+### 1. Jupyter Workbench 접속 (1분)
+1. OpenShift AI Dashboard → Data Science Projects
+2. 생성한 프로젝트 선택
+3. Workbenches 탭 → 생성한 Workbench의 **Open** 클릭
+4. JupyterLab 환경 실행 확인
+
+### 2. S3 데이터 준비 (Jupyter Workbench에서 실행) (10분)
+
+#### Step 2.1: 파일 다운로드
+**Jupyter Terminal 실행**:
+- JupyterLab 좌측 상단 메뉴 → File → New → Terminal
+
+**Terminal에서 실행**:
 ```bash
-git clone <repository-url>
+cd ~
+git clone https://github.com/aaronjee/rhoai34.git
 cd rhoai34/kubeflow/
 ```
 
-### 2. S3 데이터 준비 (5분)
-
-#### Step 2.1: 필수 패키지 설치
+#### Step 2.2: 필수 패키지 설치
+**Jupyter Terminal에서 실행**:
 ```bash
-# scikit-learn 설치 (iris.csv 생성에 필요)
-pip install scikit-learn pandas
-
-# 또는 전체 requirements.txt 설치
-pip install -r requirements.txt
+pip install scikit-learn pandas s3cmd
 ```
 
-#### Step 2.2: Iris 데이터셋 CSV 생성
+**설명**:
+- 인터넷 연결을 통해 PyPI (Python Package Index)에서 자동으로 패키지 다운로드
+- `scikit-learn`: Iris 데이터셋 로드 및 머신러닝 라이브러리
+- `pandas`: 데이터 처리 및 CSV 생성
+- `s3cmd`: S3 버킷 업로드 도구
+
+예상 출력:
+```
+Collecting scikit-learn
+  Downloading scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.whl (10.8 MB)
+Collecting pandas
+  Downloading pandas-2.1.3-cp311-cp311-manylinux_2_17_x86_64.whl (12.3 MB)
+Collecting s3cmd
+  Downloading s3cmd-2.4.0.tar.gz (181 kB)
+Successfully installed ...
+```
+
+#### Step 2.3: Iris 데이터셋 CSV 생성
+**Jupyter Terminal에서 실행**:
 ```bash
 python prepare_iris_data.py
 ```
+
 예상 출력: `iris.csv` 파일 생성 (150행, 5컬럼)
 
-#### Step 2.3: s3cmd 설치 및 설정
+**생성 확인**:
+- JupyterLab 파일 브라우저에서 `iris.csv` 파일 확인
+- 더블 클릭하여 데이터 미리보기 가능
 
-**s3cmd 다운로드 (선택 1: pip 설치)**
-```bash
-pip install s3cmd
-```
+#### Step 2.4: s3cmd 설정 (Jupyter Terminal에서 실행)
 
-**s3cmd 다운로드 (선택 2: 바이너리 다운로드)**
-```bash
-# Linux/macOS
-curl -LO https://github.com/s3tools/s3cmd/releases/download/v2.4.0/s3cmd-2.4.0.tar.gz
-tar xzf s3cmd-2.4.0.tar.gz
-cd s3cmd-2.4.0
-sudo python setup.py install
+**s3cmd는 Step 2.2에서 이미 설치됨 (`pip install s3cmd`)**
 
-# 또는 패키지 매니저 사용
-# RHEL/CentOS: sudo yum install s3cmd
-# Ubuntu/Debian: sudo apt-get install s3cmd
-# macOS: brew install s3cmd
-```
-
-**s3cmd 설정**
+**s3cmd 설정**:
 ```bash
 s3cmd --configure
 ```
 
-설정 항목:
-- Access Key: `<your-access-key>`
-- Secret Key: `<your-secret-key>`
-- S3 Endpoint: `<your-s3-endpoint>` (예: s3.amazonaws.com 또는 MinIO endpoint)
-- DNS-style bucket: `%(bucket)s.<endpoint>` (기본값)
+대화형 설정 입력:
+```
+Access Key: <Data Connection에서 확인한 Access Key>
+Secret Key: <Data Connection에서 확인한 Secret Key>
+Default Region: us-east-1 (엔터)
+S3 Endpoint: <S3 Endpoint URL>  # 예: s3.amazonaws.com 또는 minio.example.com
+DNS-style bucket: %(bucket)s.<endpoint>  # 엔터 (기본값)
+Encryption password: (엔터 - 선택 사항)
+Path to GPG program: (엔터 - 기본값)
+Use HTTPS protocol: Yes (엔터)
+HTTP Proxy server: (엔터)
+
+Save settings? (y/N) y
+```
 
 설정 파일 저장 위치: `~/.s3cfg`
 
-#### Step 2.4: S3 버킷에 업로드
+**Data Connection 정보 확인 방법**:
+1. OpenShift AI Dashboard → Data Science Project
+2. Data connections 탭 → 생성한 Data Connection 선택
+3. Access key, Secret key, Endpoint URL 복사
+
+#### Step 2.5: S3 버킷에 업로드 (Jupyter Terminal에서 실행)
 
 **방법 1: s3cmd 사용 (권장)**
 ```bash
@@ -83,11 +114,17 @@ s3cmd put iris.csv s3://handon-kubeflow/dataset/iris.csv
 s3cmd ls s3://handon-kubeflow/dataset/
 ```
 
-**방법 2: OpenShift AI UI 사용**
-1. Data Science Project → Data connections
-2. S3 버킷 브라우저 열기
-3. `dataset/` 폴더 생성 (없으면)
-4. `iris.csv` 업로드
+예상 출력:
+```
+upload: 'iris.csv' -> 's3://handon-kubeflow/dataset/iris.csv'
+2024-01-15 10:30   2745   s3://handon-kubeflow/dataset/iris.csv
+```
+
+**방법 2: JupyterLab UI 사용**
+1. JupyterLab 파일 브라우저에서 `iris.csv` 우클릭
+2. Download 선택하여 로컬에 저장
+3. OpenShift AI Dashboard → Data connections → S3 버킷 브라우저
+4. `dataset/` 폴더에 `iris.csv` 업로드
 
 ### 3. pipeline.py 이해 (10분)
 파이프라인은 4개 컴포넌트로 구성됩니다:
@@ -95,6 +132,15 @@ s3cmd ls s3://handon-kubeflow/dataset/
 - `preprocess`: 80/20 train/test split
 - `train`: LogisticRegression 학습
 - `evaluate`: 정확도 및 Confusion Matrix 출력
+
+**중요**: 각 컴포넌트의 `packages_to_install` 파라미터에 지정된 패키지들은 **파이프라인 실행 시 자동으로 인터넷을 통해 PyPI에서 다운로드 및 설치**됩니다.
+```python
+@dsl.component(
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
+    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 's3fs>=2023.1.0', 'boto3>=1.28.0']
+    # ↑ 파이프라인 실행 시 컨테이너 내부에서 pip install로 자동 설치됨
+)
+```
 
 ### 4. pipeline.yaml 컴파일 (3분)
 ```python
@@ -166,6 +212,31 @@ s3cmd mb s3://handon-kubeflow
 # 버킷 목록 확인
 s3cmd ls
 ```
+
+### pip 패키지 설치 실패
+**증상**: `Could not find a version that satisfies the requirement` 또는 연결 타임아웃
+**원인**: 인터넷 연결 문제 또는 PyPI 접근 불가
+**해결**:
+```bash
+# 인터넷 연결 확인
+ping pypi.org
+
+# pip 기본 index 확인
+pip config list
+
+# 프록시 환경인 경우 설정
+export HTTP_PROXY=http://proxy.example.com:8080
+export HTTPS_PROXY=http://proxy.example.com:8080
+pip install scikit-learn pandas s3cmd
+```
+
+### 파이프라인 컴포넌트 패키지 설치 실패
+**증상**: 파이프라인 실행 중 컴포넌트가 `ImagePullBackOff` 또는 `CrashLoopBackOff`
+**원인**: 컨테이너 내부에서 PyPI 접근 불가 (인터넷 연결 또는 방화벽)
+**해결**:
+- OpenShift 클러스터의 아웃바운드 인터넷 연결 확인
+- NetworkPolicy가 PyPI (pypi.org, files.pythonhosted.org) 접근을 허용하는지 확인
+- Pod 로그 확인: `oc logs <pod-name> -n <namespace>`
 
 ### KFP 버전 불일치
 **증상**: `ImportError: cannot import name 'dsl'`
