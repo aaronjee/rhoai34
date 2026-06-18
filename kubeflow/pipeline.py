@@ -137,13 +137,26 @@ def iris_classification_pipeline(
     s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv'
 ):
     """4-component pipeline with S3 data loading"""
+    proxy_url = 'http://192.168.10.6:3128'
+    
     load_task = load_data_from_s3(s3_path=s3_dataset_path)
+    load_task.set_env_variable('HTTP_PROXY', proxy_url)
+    load_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
+    preprocess_task.set_env_variable('HTTP_PROXY', proxy_url)
+    preprocess_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    
     train_task = train(train_data_in=preprocess_task.outputs['train_data_out'])
-    evaluate(
+    train_task.set_env_variable('HTTP_PROXY', proxy_url)
+    train_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    
+    evaluate_task = evaluate(
         model_in=train_task.outputs['model_out'],
         test_data_in=preprocess_task.outputs['test_data_out']
     )
+    evaluate_task.set_env_variable('HTTP_PROXY', proxy_url)
+    evaluate_task.set_env_variable('HTTPS_PROXY', proxy_url)
 
 
 if __name__ == '__main__':
