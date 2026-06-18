@@ -23,13 +23,22 @@ cd rhoai34/kubeflow/
 
 ### 2. S3 데이터 준비 (5분)
 
-#### Step 2.1: Iris 데이터셋 CSV 생성
+#### Step 2.1: 필수 패키지 설치
+```bash
+# scikit-learn 설치 (iris.csv 생성에 필요)
+pip install scikit-learn pandas
+
+# 또는 전체 requirements.txt 설치
+pip install -r requirements.txt
+```
+
+#### Step 2.2: Iris 데이터셋 CSV 생성
 ```bash
 python prepare_iris_data.py
 ```
 예상 출력: `iris.csv` 파일 생성 (150행, 5컬럼)
 
-#### Step 2.2: s3cmd 설치 및 설정
+#### Step 2.3: s3cmd 설치 및 설정
 
 **s3cmd 다운로드 (선택 1: pip 설치)**
 ```bash
@@ -63,7 +72,7 @@ s3cmd --configure
 
 설정 파일 저장 위치: `~/.s3cfg`
 
-#### Step 2.3: S3 버킷에 업로드
+#### Step 2.4: S3 버킷에 업로드
 
 **방법 1: s3cmd 사용 (권장)**
 ```bash

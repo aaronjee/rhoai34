@@ -9,8 +9,18 @@ Output:
     iris.csv - S3에 업로드할 Iris 데이터셋
 """
 
-from sklearn.datasets import load_iris
-import pandas as pd
+import sys
+
+try:
+    from sklearn.datasets import load_iris
+    import pandas as pd
+except ModuleNotFoundError as e:
+    print(f"❌ 필수 패키지가 설치되지 않았습니다: {e}")
+    print("\n다음 명령어로 설치하세요:")
+    print("  pip install scikit-learn pandas")
+    print("\n또는 전체 requirements.txt 설치:")
+    print("  pip install -r requirements.txt")
+    sys.exit(1)
 
 def generate_iris_csv():
     """Iris 데이터셋을 CSV 파일로 생성"""
