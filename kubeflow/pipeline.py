@@ -138,18 +138,25 @@ def iris_classification_pipeline(
 ):
     """4-component pipeline with S3 data loading"""
     proxy_url = 'http://192.168.10.6:3128'
+    no_proxy = 'localhost,127.0.0.1,.svc,.svc.cluster.local,ai-aaron-team.svc.cluster.local'
     
     load_task = load_data_from_s3(s3_path=s3_dataset_path)
     load_task.set_env_variable('HTTP_PROXY', proxy_url)
     load_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    load_task.set_env_variable('NO_PROXY', no_proxy)
+    load_task.set_env_variable('no_proxy', no_proxy)
     
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
     preprocess_task.set_env_variable('HTTP_PROXY', proxy_url)
     preprocess_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    preprocess_task.set_env_variable('NO_PROXY', no_proxy)
+    preprocess_task.set_env_variable('no_proxy', no_proxy)
     
     train_task = train(train_data_in=preprocess_task.outputs['train_data_out'])
     train_task.set_env_variable('HTTP_PROXY', proxy_url)
     train_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    train_task.set_env_variable('NO_PROXY', no_proxy)
+    train_task.set_env_variable('no_proxy', no_proxy)
     
     evaluate_task = evaluate(
         model_in=train_task.outputs['model_out'],
@@ -157,6 +164,8 @@ def iris_classification_pipeline(
     )
     evaluate_task.set_env_variable('HTTP_PROXY', proxy_url)
     evaluate_task.set_env_variable('HTTPS_PROXY', proxy_url)
+    evaluate_task.set_env_variable('NO_PROXY', no_proxy)
+    evaluate_task.set_env_variable('no_proxy', no_proxy)
 
 
 if __name__ == '__main__':
