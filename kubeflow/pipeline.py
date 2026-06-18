@@ -138,7 +138,7 @@ def iris_classification_pipeline(
 ):
     """4-component pipeline with S3 data loading"""
     proxy_url = 'http://192.168.10.6:3128'
-    no_proxy = 'localhost,127.0.0.1,.svc,.svc.cluster.local,ai-aaron-team.svc.cluster.local'
+    no_proxy = 'localhost,127.0.0.1,.svc,.svc.cluster.local,ai-aaron-team.svc.cluster.local,kubernetes.default.svc,172.30.0.0/16,10.0.0.0/8'
     
     load_task = load_data_from_s3(s3_path=s3_dataset_path)
     load_task.set_env_variable('HTTP_PROXY', proxy_url)
