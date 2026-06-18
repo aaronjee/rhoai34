@@ -673,6 +673,95 @@ Run 3:    iris-prod-20240701-release-v1.1.0
 
 ## Troubleshooting
 
+### Run 생성 실패: MySQL Encoding Error (CRITICAL)
+
+**증상**:
+```
+Error 1366 (22007): Incorrect string value: '\xEC\xA0\x95\xED\x99\x95...' 
+for column `mlpipeline`.`run_details`.`PipelineRuntimeManifest` at row 1
+
+Failed to create a new run: Failed to create a run: InternalServerError
+```
+
+**원인**:
+- OpenShift AI의 MySQL 데이터베이스가 **UTF-8 multibyte characters (한글, 중국어, 일본어 등)를 지원하지 않음**
+- `pipeline.yaml`의 description, docstring에 한글이 포함되어 있으면 MySQL에 저장 실패
+- MySQL character set이 `utf8mb4`가 아닌 `latin1` 또는 `utf8`로 설정되어 있음
+
+**해결 방법 (즉시 적용 가능)**:
+
+**Step 1: pipeline.py의 모든 한글을 영어로 변경**
+
+```python
+# ❌ 잘못된 예 (한글 사용)
+@dsl.pipeline(
+    name='iris-pipeline',
+    description='Iris 분류 파이프라인'  # MySQL 에러 발생!
+)
+def my_pipeline():
+    """데이터 로드 및 학습"""  # MySQL 에러 발생!
+    pass
+
+# ✅ 올바른 예 (영어만 사용)
+@dsl.pipeline(
+    name='iris-pipeline',
+    description='Iris classification pipeline'  # 정상 작동
+)
+def my_pipeline():
+    """Load data and train model"""  # 정상 작동
+    pass
+```
+
+**Step 2: Jupyter Workbench에서 pipeline.yaml 재컴파일**
+
+```bash
+# Terminal에서 실행
+cd kubeflow/
+python pipeline.py
+```
+
+출력:
+```
+Pipeline compiled to pipeline.yaml
+```
+
+**Step 3: OpenShift AI Dashboard에서 재등록**
+
+1. 기존 Pipeline 삭제 (또는 새 버전으로 등록)
+2. **Import pipeline** 클릭
+3. 새로 컴파일된 `pipeline.yaml` 업로드
+4. **Create run** 실행 → 정상 작동 확인
+
+**검증**:
+- Run이 Pending → Running 상태로 전환되면 성공
+- 첫 번째 컴포넌트 (load_data_from_s3)가 실행되기 시작하면 문제 해결됨
+
+**근본 원인 (관리자 권한 필요)**:
+
+MySQL character set을 `utf8mb4`로 변경하면 한글 사용 가능하지만, 이는 **OpenShift AI 관리자만 수정 가능**:
+
+```sql
+-- 관리자 권한 필요
+ALTER DATABASE mlpipeline CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+ALTER TABLE run_details CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+**권장 사항**:
+- 프로덕션 환경에서는 **모든 description, docstring을 영어로 작성**
+- Comment는 한글 사용 가능 (YAML에 포함되지 않음)
+- 한글 주석은 코드 내부에만 사용하고, docstring은 영어로 작성
+
+**예시**:
+```python
+def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
+    """Load dataset from S3 bucket"""  # ✅ 영어 docstring
+    # S3 버킷에서 데이터 로드 (한글 주석은 OK)  # ✅ 한글 주석 가능
+    import pandas as pd
+    # ... 구현 ...
+```
+
+---
+
 ### s3cmd 설치 실패 (Red Hat Python Index에서 찾을 수 없음)
 **증상**:
 ```
