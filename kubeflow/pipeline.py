@@ -1,11 +1,11 @@
 """
 OpenShift AI 3.4 Kubeflow Pipeline - Iris Classification (CPU-based)
 
-4개 컴포넌트로 구성된 간단한 분류 파이프라인:
-1. load_data: Iris 데이터셋 로드
+Simple 4-component classification pipeline:
+1. load_data: Load Iris dataset from S3
 2. preprocess: train/test split (80/20)
-3. train: LogisticRegression 학습
-4. evaluate: 정확도 및 Confusion Matrix 출력
+3. train: Train LogisticRegression model
+4. evaluate: Evaluate accuracy and confusion matrix
 """
 
 from kfp import dsl
@@ -21,13 +21,13 @@ def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
     import pandas as pd
     import os
     
-    # OpenShift AI Data Connection에서 S3 자격 증명 자동 주입
-    # 환경변수: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT, AWS_S3_BUCKET
+    # S3 credentials are auto-injected from OpenShift AI Data Connection
+    # Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT, AWS_S3_BUCKET
     
     print(f"Loading data from S3: {s3_path}")
     
-    # pandas가 s3fs를 통해 S3 직접 읽기
-    # 예: s3://handon-kubeflow/dataset/iris.csv
+    # pandas reads S3 directly via s3fs
+    # Example: s3://handon-kubeflow/dataset/iris.csv
     df = pd.read_csv(s3_path, storage_options={
         'key': os.getenv('AWS_ACCESS_KEY_ID'),
         'secret': os.getenv('AWS_SECRET_ACCESS_KEY'),
