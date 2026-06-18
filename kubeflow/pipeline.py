@@ -134,7 +134,10 @@ def evaluate(
     description='Iris classification pipeline with S3 data loading, CPU-based runtime for OpenShift AI 3.4'
 )
 def iris_classification_pipeline(
-    s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv'
+    s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv',
+    aws_access_key_id: str = '',
+    aws_secret_access_key: str = '',
+    aws_s3_endpoint: str = ''
 ):
     """4-component pipeline with S3 data loading"""
     proxy_url = 'http://192.168.10.6:3128'
@@ -145,6 +148,9 @@ def iris_classification_pipeline(
     load_task.set_env_variable('HTTPS_PROXY', proxy_url)
     load_task.set_env_variable('NO_PROXY', no_proxy)
     load_task.set_env_variable('no_proxy', no_proxy)
+    load_task.set_env_variable('AWS_ACCESS_KEY_ID', aws_access_key_id)
+    load_task.set_env_variable('AWS_SECRET_ACCESS_KEY', aws_secret_access_key)
+    load_task.set_env_variable('AWS_S3_ENDPOINT', aws_s3_endpoint)
     
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
     preprocess_task.set_env_variable('HTTP_PROXY', proxy_url)
