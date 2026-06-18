@@ -39,26 +39,41 @@ cd rhoai34/kubeflow/
 
 #### Step 2.2: 필수 패키지 설치
 **Jupyter Terminal에서 실행**:
+
+**참고**: OpenShift AI Workbench는 기본적으로 Red Hat curated Python Index를 사용하며, s3cmd가 포함되지 않습니다. 공식 PyPI에서 직접 설치해야 합니다.
+
 ```bash
-pip install scikit-learn pandas s3cmd
+# scikit-learn과 pandas는 이미 설치되어 있을 수 있음
+pip install scikit-learn pandas
+
+# s3cmd는 공식 PyPI에서 설치 (Red Hat Index에 없음)
+pip install --index-url https://pypi.org/simple s3cmd
 ```
 
 **설명**:
-- 인터넷 연결을 통해 PyPI (Python Package Index)에서 자동으로 패키지 다운로드
 - `scikit-learn`: Iris 데이터셋 로드 및 머신러닝 라이브러리
 - `pandas`: 데이터 처리 및 CSV 생성
-- `s3cmd`: S3 버킷 업로드 도구
+- `s3cmd`: S3 버킷 업로드 도구 (공식 PyPI에서만 제공)
 
 예상 출력:
 ```
-Collecting scikit-learn
-  Downloading scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.whl (10.8 MB)
-Collecting pandas
-  Downloading pandas-2.1.3-cp311-cp311-manylinux_2_17_x86_64.whl (12.3 MB)
+Looking in indexes: https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple/
+Requirement already satisfied: scikit-learn in /opt/app-root/lib64/python3.12/site-packages (1.8.0)
+Requirement already satisfied: pandas in /opt/app-root/lib64/python3.12/site-packages (3.0.2)
+
+Looking in indexes: https://pypi.org/simple
 Collecting s3cmd
   Downloading s3cmd-2.4.0.tar.gz (181 kB)
-Successfully installed ...
+Successfully installed s3cmd-2.4.0
 ```
+
+**대안: Python boto3 스크립트 사용** (s3cmd 설치 불가 시)
+```bash
+# boto3는 Red Hat Index에 포함되어 있음
+pip install boto3
+```
+
+boto3를 사용한 S3 업로드 스크립트는 Step 2.5에서 제공됩니다.
 
 #### Step 2.3: Iris 데이터셋 CSV 생성
 **Jupyter Terminal에서 실행**:
@@ -105,7 +120,7 @@ Save settings? (y/N) y
 
 #### Step 2.5: S3 버킷에 업로드 (Jupyter Terminal에서 실행)
 
-**방법 1: s3cmd 사용 (권장)**
+**방법 1: s3cmd 사용**
 ```bash
 # 단일 파일 업로드
 s3cmd put iris.csv s3://handon-kubeflow/dataset/iris.csv
@@ -120,7 +135,53 @@ upload: 'iris.csv' -> 's3://handon-kubeflow/dataset/iris.csv'
 2024-01-15 10:30   2745   s3://handon-kubeflow/dataset/iris.csv
 ```
 
-**방법 2: JupyterLab UI 사용**
+**방법 2: Python boto3 스크립트 사용** (s3cmd 설치 실패 시 대안)
+
+**upload_to_s3.py 파일 생성**:
+```python
+import boto3
+import os
+
+# Data Connection 환경변수에서 자격 증명 가져오기
+# 또는 직접 입력
+s3_endpoint = os.getenv('AWS_S3_ENDPOINT', 'https://s3.amazonaws.com')
+access_key = os.getenv('AWS_ACCESS_KEY_ID', '<your-access-key>')
+secret_key = os.getenv('AWS_SECRET_ACCESS_KEY', '<your-secret-key>')
+
+# S3 클라이언트 생성
+s3 = boto3.client(
+    's3',
+    endpoint_url=s3_endpoint,
+    aws_access_key_id=access_key,
+    aws_secret_access_key=secret_key
+)
+
+# 파일 업로드
+bucket_name = 'handon-kubeflow'
+file_path = 'iris.csv'
+s3_key = 'dataset/iris.csv'
+
+s3.upload_file(file_path, bucket_name, s3_key)
+print(f"✓ Uploaded {file_path} to s3://{bucket_name}/{s3_key}")
+
+# 업로드 확인
+response = s3.list_objects_v2(Bucket=bucket_name, Prefix='dataset/')
+for obj in response.get('Contents', []):
+    print(f"  {obj['Key']} ({obj['Size']} bytes)")
+```
+
+**Jupyter Terminal에서 실행**:
+```bash
+python upload_to_s3.py
+```
+
+예상 출력:
+```
+✓ Uploaded iris.csv to s3://handon-kubeflow/dataset/iris.csv
+  dataset/iris.csv (2745 bytes)
+```
+
+**방법 3: JupyterLab UI 사용**
 1. JupyterLab 파일 브라우저에서 `iris.csv` 우클릭
 2. Download 선택하여 로컬에 저장
 3. OpenShift AI Dashboard → Data connections → S3 버킷 브라우저
@@ -183,6 +244,29 @@ compiler.Compiler().compile(
 **SDK 실행** (Advanced): `kfp.client.Client().create_run_from_pipeline_package('pipeline.yaml')`
 
 ## Troubleshooting
+
+### s3cmd 설치 실패 (Red Hat Python Index에서 찾을 수 없음)
+**증상**:
+```
+Looking in indexes: https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple/
+ERROR: Could not find a version that satisfies the requirement s3cmd (from versions: none)
+ERROR: No matching distribution found for s3cmd
+```
+
+**원인**: OpenShift AI Workbench는 Red Hat curated Python Index를 사용하며, s3cmd는 보안 및 지원 정책상 포함되지 않음
+
+**해결 방법 1: 공식 PyPI에서 직접 설치**
+```bash
+pip install --index-url https://pypi.org/simple s3cmd
+```
+
+**해결 방법 2: boto3 사용 (권장 대안)**
+```bash
+# boto3는 Red Hat Index에 포함되어 있음
+pip install boto3
+
+# Step 2.5의 "방법 2: Python boto3 스크립트 사용" 참조
+```
 
 ### S3 환경변수 누락
 **증상**: `AWS_ACCESS_KEY_ID not found` 에러
