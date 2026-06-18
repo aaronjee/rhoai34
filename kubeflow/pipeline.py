@@ -14,22 +14,29 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
 
 @dsl.component(
     base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
-    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
+    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0', 's3fs>=2023.1.0', 'boto3>=1.28.0']
 )
-def load_data(dataset_out: Output[Dataset]):
-    """Iris 데이터셋 로드"""
-    from sklearn.datasets import load_iris
+def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
+    """S3 버킷에서 데이터셋 로드"""
     import pandas as pd
+    import os
     
-    iris = load_iris()
-    df = pd.DataFrame(
-        data=iris.data,
-        columns=iris.feature_names
-    )
-    df['target'] = iris.target
+    # OpenShift AI Data Connection에서 S3 자격 증명 자동 주입
+    # 환경변수: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT, AWS_S3_BUCKET
+    
+    print(f"Loading data from S3: {s3_path}")
+    
+    # pandas가 s3fs를 통해 S3 직접 읽기
+    # 예: s3://handon-kubeflow/dataset/iris.csv
+    df = pd.read_csv(s3_path, storage_options={
+        'key': os.getenv('AWS_ACCESS_KEY_ID'),
+        'secret': os.getenv('AWS_SECRET_ACCESS_KEY'),
+        'client_kwargs': {'endpoint_url': os.getenv('AWS_S3_ENDPOINT')}
+    })
     
     df.to_csv(dataset_out.path, index=False)
-    print(f"Loaded {len(df)} samples with {len(iris.feature_names)} features")
+    print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
+    print(f"Columns: {list(df.columns)}")
 
 
 @dsl.component(
@@ -124,11 +131,13 @@ def evaluate(
 
 @dsl.pipeline(
     name='iris-classification-pipeline',
-    description='Iris 분류 파이프라인 (CPU 기반, OpenShift AI 3.4)'
+    description='Iris 분류 파이프라인 (S3 데이터 로드, CPU 기반, OpenShift AI 3.4)'
 )
-def iris_classification_pipeline():
-    """4개 컴포넌트 파이프라인"""
-    load_task = load_data()
+def iris_classification_pipeline(
+    s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv'
+):
+    """4개 컴포넌트 파이프라인 (S3에서 데이터 로드)"""
+    load_task = load_data_from_s3(s3_path=s3_dataset_path)
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
     train_task = train(train_data_in=preprocess_task.outputs['train_data_out'])
     evaluate(

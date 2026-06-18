@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""
+Iris 데이터셋을 CSV로 생성하여 S3 업로드 준비
+
+Usage:
+    python prepare_iris_data.py
+    
+Output:
+    iris.csv - S3에 업로드할 Iris 데이터셋
+"""
+
+from sklearn.datasets import load_iris
+import pandas as pd
+
+def generate_iris_csv():
+    """Iris 데이터셋을 CSV 파일로 생성"""
+    
+    # sklearn에서 Iris 데이터 로드
+    iris = load_iris()
+    
+    # DataFrame 생성
+    df = pd.DataFrame(
+        data=iris.data,
+        columns=iris.feature_names
+    )
+    df['target'] = iris.target
+    
+    # CSV 저장
+    output_file = 'iris.csv'
+    df.to_csv(output_file, index=False)
+    
+    print(f"✓ Iris 데이터셋 생성 완료: {output_file}")
+    print(f"  - 행 개수: {len(df)}")
+    print(f"  - 컬럼: {list(df.columns)}")
+    print(f"  - 파일 크기: {df.memory_usage(deep=True).sum() / 1024:.2f} KB")
+    print(f"\n다음 명령어로 S3에 업로드하세요:")
+    print(f"  aws s3 cp {output_file} s3://handon-kubeflow/dataset/{output_file}")
+    print(f"\n또는 OpenShift AI UI에서:")
+    print(f"  1. Data Science Project → Data connections")
+    print(f"  2. S3 버킷 브라우저 열기")
+    print(f"  3. dataset/ 폴더에 {output_file} 업로드")
+
+if __name__ == '__main__':
+    generate_iris_csv()

@@ -7,5 +7,9 @@ __pycache__/
 # Virtual environment
 .venv/
 
+# Generated data files
+iris.csv
+*.csv
+
 # Test files
 test.yaml

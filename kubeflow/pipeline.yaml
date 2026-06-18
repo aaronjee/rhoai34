@@ -1,6 +1,8 @@
 # PIPELINE DEFINITION
 # Name: iris-classification-pipeline
-# Description: Iris 분류 파이프라인 (CPU 기반, OpenShift AI 3.4)
+# Description: Iris 분류 파이프라인 (S3 데이터 로드, CPU 기반, OpenShift AI 3.4)
+# Inputs:
+#    s3_dataset_path: str [Default: 's3://handon-kubeflow/dataset/iris.csv']
 components:
   comp-evaluate:
     executorLabel: exec-evaluate
@@ -20,8 +22,12 @@ components:
           artifactType:
             schemaTitle: system.Metrics
             schemaVersion: 0.0.1
-  comp-load-data:
-    executorLabel: exec-load-data
+  comp-load-data-from-s3:
+    executorLabel: exec-load-data-from-s3
+    inputDefinitions:
+      parameters:
+        s3_path:
+          parameterType: STRING
     outputDefinitions:
       artifacts:
         dataset_out:
@@ -100,22 +106,23 @@ deploymentSpec:
           \ y_pred)\n\n    metrics_out.log_metric('accuracy', accuracy)\n\n    print(f\"\
           Accuracy: {accuracy:.4f}\")\n    print(f\"Confusion Matrix:\\n{cm}\")\n\n"
         image: registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9
-    exec-load-data:
+    exec-load-data-from-s3:
       container:
         args:
         - --executor_input
         - '{{$}}'
         - --function_to_execute
-        - load_data
+        - load_data_from_s3
         command:
         - sh
         - -c
         - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
           \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
           \ python3 -m pip install --quiet --no-warn-script-location 'scikit-learn>=1.3.0'\
-          \ 'pandas>=2.0.0' 'numpy>=1.24.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
-          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
-          3.9\"' && \"$0\" \"$@\"\n"
+          \ 'pandas>=2.0.0' 'numpy>=1.24.0' 's3fs>=2023.1.0' 'boto3>=1.28.0'  && \
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
         - sh
         - -ec
         - 'program_path=$(mktemp -d)
@@ -127,13 +134,19 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef load_data(dataset_out: Output[Dataset]):\n    \"\"\"Iris \uB370\
-          \uC774\uD130\uC14B \uB85C\uB4DC\"\"\"\n    from sklearn.datasets import\
-          \ load_iris\n    import pandas as pd\n\n    iris = load_iris()\n    df =\
-          \ pd.DataFrame(\n        data=iris.data,\n        columns=iris.feature_names\n\
-          \    )\n    df['target'] = iris.target\n\n    df.to_csv(dataset_out.path,\
-          \ index=False)\n    print(f\"Loaded {len(df)} samples with {len(iris.feature_names)}\
-          \ features\")\n\n"
+          \ *\n\ndef load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):\n\
+          \    \"\"\"S3 \uBC84\uD0B7\uC5D0\uC11C \uB370\uC774\uD130\uC14B \uB85C\uB4DC\
+          \"\"\"\n    import pandas as pd\n    import os\n\n    # OpenShift AI Data\
+          \ Connection\uC5D0\uC11C S3 \uC790\uACA9 \uC99D\uBA85 \uC790\uB3D9 \uC8FC\
+          \uC785\n    # \uD658\uACBD\uBCC0\uC218: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,\
+          \ AWS_S3_ENDPOINT, AWS_S3_BUCKET\n\n    print(f\"Loading data from S3: {s3_path}\"\
+          )\n\n    # pandas\uAC00 s3fs\uB97C \uD1B5\uD574 S3 \uC9C1\uC811 \uC77D\uAE30\
+          \n    # \uC608: s3://handon-kubeflow/dataset/iris.csv\n    df = pd.read_csv(s3_path,\
+          \ storage_options={\n        'key': os.getenv('AWS_ACCESS_KEY_ID'),\n  \
+          \      'secret': os.getenv('AWS_SECRET_ACCESS_KEY'),\n        'client_kwargs':\
+          \ {'endpoint_url': os.getenv('AWS_S3_ENDPOINT')}\n    })\n\n    df.to_csv(dataset_out.path,\
+          \ index=False)\n    print(f\"Loaded {len(df)} rows, {len(df.columns)} columns\"\
+          )\n    print(f\"Columns: {list(df.columns)}\")\n\n"
         image: registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9
     exec-preprocess:
       container:
@@ -212,8 +225,8 @@ deploymentSpec:
           Model coefficients shape: {clf.coef_.shape}\")\n\n"
         image: registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9
 pipelineInfo:
-  description: "Iris \uBD84\uB958 \uD30C\uC774\uD504\uB77C\uC778 (CPU \uAE30\uBC18\
-    , OpenShift AI 3.4)"
+  description: "Iris \uBD84\uB958 \uD30C\uC774\uD504\uB77C\uC778 (S3 \uB370\uC774\uD130\
+    \ \uB85C\uB4DC, CPU \uAE30\uBC18, OpenShift AI 3.4)"
   name: iris-classification-pipeline
 root:
   dag:
@@ -238,26 +251,30 @@ root:
                 producerTask: preprocess
         taskInfo:
           name: evaluate
-      load-data:
+      load-data-from-s3:
         cachingOptions:
           enableCache: true
         componentRef:
-          name: comp-load-data
+          name: comp-load-data-from-s3
+        inputs:
+          parameters:
+            s3_path:
+              componentInputParameter: s3_dataset_path
         taskInfo:
-          name: load-data
+          name: load-data-from-s3
       preprocess:
         cachingOptions:
           enableCache: true
         componentRef:
           name: comp-preprocess
         dependentTasks:
-        - load-data
+        - load-data-from-s3
         inputs:
           artifacts:
             dataset_in:
               taskOutputArtifact:
                 outputArtifactKey: dataset_out
-                producerTask: load-data
+                producerTask: load-data-from-s3
         taskInfo:
           name: preprocess
       train:
@@ -275,5 +292,11 @@ root:
                 producerTask: preprocess
         taskInfo:
           name: train
+  inputDefinitions:
+    parameters:
+      s3_dataset_path:
+        defaultValue: s3://handon-kubeflow/dataset/iris.csv
+        isOptional: true
+        parameterType: STRING
 schemaVersion: 2.1.0
 sdkVersion: kfp-2.16.1
