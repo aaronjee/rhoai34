@@ -13,8 +13,7 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
 
 
 @dsl.component(
-    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6',
-    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0', 's3fs>=2023.1.0', 'boto3>=1.28.0']
+    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6'
 )
 def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
     """Load dataset from S3 bucket"""
@@ -40,8 +39,7 @@ def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
 
 
 @dsl.component(
-    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6',
-    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
+    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6'
 )
 def preprocess(
     dataset_in: Input[Dataset],
@@ -72,8 +70,7 @@ def preprocess(
 
 
 @dsl.component(
-    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6',
-    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
+    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6'
 )
 def train(
     train_data_in: Input[Dataset],
@@ -99,8 +96,7 @@ def train(
 
 
 @dsl.component(
-    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6',
-    packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
+    base_image='registry.redhat.io/rhoai/odh-th06-cpu-torch210-py312-rhel9@sha256:06d6b335fbcd50709a36e99b60245b4e49614ed0d5f7e2906d629477527ac1d6'
 )
 def evaluate(
     model_in: Input[Model],
