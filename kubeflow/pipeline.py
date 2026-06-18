@@ -13,7 +13,7 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
 
 
 @dsl.component(
-    base_image='quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523',
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
     packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
 )
 def load_data(dataset_out: Output[Dataset]):
@@ -33,7 +33,7 @@ def load_data(dataset_out: Output[Dataset]):
 
 
 @dsl.component(
-    base_image='quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523',
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
     packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
 )
 def preprocess(
@@ -65,7 +65,7 @@ def preprocess(
 
 
 @dsl.component(
-    base_image='quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523',
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
     packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
 )
 def train(
@@ -92,7 +92,7 @@ def train(
 
 
 @dsl.component(
-    base_image='quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523',
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9',
     packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0']
 )
 def evaluate(
