@@ -16,22 +16,23 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
     base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:ed6634540d78910ceedc826b871641fb3f66b27be45b50df31c504582204a661',
     packages_to_install=['kfp>=2.0.0', 'scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0', 's3fs>=2023.1.0', 'boto3>=1.28.0']
 )
-def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
+def load_data_from_s3(
+    s3_path: str,
+    aws_access_key_id: str,
+    aws_secret_access_key: str,
+    aws_s3_endpoint: str,
+    dataset_out: Output[Dataset]
+):
     """Load dataset from S3 bucket"""
     import pandas as pd
-    import os
-    
-    # S3 credentials are auto-injected from OpenShift AI Data Connection
-    # Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT, AWS_S3_BUCKET
     
     print(f"Loading data from S3: {s3_path}")
+    print(f"Using S3 endpoint: {aws_s3_endpoint}")
     
-    # pandas reads S3 directly via s3fs
-    # Example: s3://handon-kubeflow/dataset/iris.csv
     df = pd.read_csv(s3_path, storage_options={
-        'key': os.getenv('AWS_ACCESS_KEY_ID'),
-        'secret': os.getenv('AWS_SECRET_ACCESS_KEY'),
-        'client_kwargs': {'endpoint_url': os.getenv('AWS_S3_ENDPOINT')}
+        'key': aws_access_key_id,
+        'secret': aws_secret_access_key,
+        'client_kwargs': {'endpoint_url': aws_s3_endpoint}
     })
     
     df.to_csv(dataset_out.path, index=False)
@@ -143,14 +144,16 @@ def iris_classification_pipeline(
     proxy_url = 'http://192.168.10.6:3128'
     no_proxy = 'localhost,127.0.0.1,.svc,.svc.cluster.local,ai-aaron-team.svc.cluster.local,kubernetes.default.svc,172.30.0.0/16,10.0.0.0/8'
     
-    load_task = load_data_from_s3(s3_path=s3_dataset_path)
+    load_task = load_data_from_s3(
+        s3_path=s3_dataset_path,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        aws_s3_endpoint=aws_s3_endpoint
+    )
     load_task.set_env_variable('HTTP_PROXY', proxy_url)
     load_task.set_env_variable('HTTPS_PROXY', proxy_url)
     load_task.set_env_variable('NO_PROXY', no_proxy)
     load_task.set_env_variable('no_proxy', no_proxy)
-    load_task.set_env_variable('AWS_ACCESS_KEY_ID', aws_access_key_id)
-    load_task.set_env_variable('AWS_SECRET_ACCESS_KEY', aws_secret_access_key)
-    load_task.set_env_variable('AWS_S3_ENDPOINT', aws_s3_endpoint)
     
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
     preprocess_task.set_env_variable('HTTP_PROXY', proxy_url)
