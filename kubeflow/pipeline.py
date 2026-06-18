@@ -13,7 +13,7 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
 
 
 @dsl.component(
-    base_image='image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-datascience:datascience'
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:ed6634540d78910ceedc826b871641fb3f66b27be45b50df31c504582204a661'
 )
 def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
     """Load dataset from S3 bucket"""
@@ -39,7 +39,7 @@ def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
 
 
 @dsl.component(
-    base_image='image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-datascience:datascience'
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:ed6634540d78910ceedc826b871641fb3f66b27be45b50df31c504582204a661'
 )
 def preprocess(
     dataset_in: Input[Dataset],
@@ -70,7 +70,7 @@ def preprocess(
 
 
 @dsl.component(
-    base_image='image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-datascience:datascience'
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:ed6634540d78910ceedc826b871641fb3f66b27be45b50df31c504582204a661'
 )
 def train(
     train_data_in: Input[Dataset],
@@ -96,7 +96,7 @@ def train(
 
 
 @dsl.component(
-    base_image='image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-datascience:datascience'
+    base_image='registry.redhat.io/rhoai/odh-pipeline-runtime-datascience-cpu-py312-rhel9@sha256:ed6634540d78910ceedc826b871641fb3f66b27be45b50df31c504582204a661'
 )
 def evaluate(
     model_in: Input[Model],
