@@ -29,12 +29,49 @@ python prepare_iris_data.py
 ```
 예상 출력: `iris.csv` 파일 생성 (150행, 5컬럼)
 
-#### Step 2.2: S3 버킷에 업로드
-**방법 1: AWS CLI 사용**
+#### Step 2.2: s3cmd 설치 및 설정
+
+**s3cmd 다운로드 (선택 1: pip 설치)**
 ```bash
-aws s3 cp iris.csv s3://handon-kubeflow/dataset/iris.csv \
-  --endpoint-url <S3-endpoint> \
-  --profile <your-profile>
+pip install s3cmd
+```
+
+**s3cmd 다운로드 (선택 2: 바이너리 다운로드)**
+```bash
+# Linux/macOS
+curl -LO https://github.com/s3tools/s3cmd/releases/download/v2.4.0/s3cmd-2.4.0.tar.gz
+tar xzf s3cmd-2.4.0.tar.gz
+cd s3cmd-2.4.0
+sudo python setup.py install
+
+# 또는 패키지 매니저 사용
+# RHEL/CentOS: sudo yum install s3cmd
+# Ubuntu/Debian: sudo apt-get install s3cmd
+# macOS: brew install s3cmd
+```
+
+**s3cmd 설정**
+```bash
+s3cmd --configure
+```
+
+설정 항목:
+- Access Key: `<your-access-key>`
+- Secret Key: `<your-secret-key>`
+- S3 Endpoint: `<your-s3-endpoint>` (예: s3.amazonaws.com 또는 MinIO endpoint)
+- DNS-style bucket: `%(bucket)s.<endpoint>` (기본값)
+
+설정 파일 저장 위치: `~/.s3cfg`
+
+#### Step 2.3: S3 버킷에 업로드
+
+**방법 1: s3cmd 사용 (권장)**
+```bash
+# 단일 파일 업로드
+s3cmd put iris.csv s3://handon-kubeflow/dataset/iris.csv
+
+# 업로드 확인
+s3cmd ls s3://handon-kubeflow/dataset/
 ```
 
 **방법 2: OpenShift AI UI 사용**
@@ -96,6 +133,31 @@ compiler.Compiler().compile(
 **증상**: `AWS_ACCESS_KEY_ID not found` 에러
 **해결**: Data Connection 설정 확인 및 Pipeline Server 재시작
 
+### s3cmd 연결 실패
+**증상**: `ERROR: S3 error: 403 (AccessDenied)`
+**해결**: 
+```bash
+# s3cmd 설정 재확인
+s3cmd --configure
+
+# 연결 테스트
+s3cmd ls s3://handon-kubeflow/
+
+# 설정 파일 확인
+cat ~/.s3cfg
+```
+
+### s3cmd 업로드 오류
+**증상**: `ERROR: Bucket 'handon-kubeflow' does not exist`
+**해결**:
+```bash
+# 버킷 생성 (필요시)
+s3cmd mb s3://handon-kubeflow
+
+# 버킷 목록 확인
+s3cmd ls
+```
+
 ### KFP 버전 불일치
 **증상**: `ImportError: cannot import name 'dsl'`
 **해결**: `pip install --upgrade kfp>=2.14.3`
@@ -115,3 +177,6 @@ compiler.Compiler().compile(
 ## 참고 문서
 - [OpenShift AI 3.4 공식 문서](https://access.redhat.com/documentation/en-us/red_hat_openshift_ai_self-managed/3.4)
 - [Kubeflow Pipelines SDK 2.x](https://www.kubeflow.org/docs/components/pipelines/v2/)
+- [s3cmd 공식 웹사이트](https://s3tools.org/s3cmd)
+- [s3cmd GitHub](https://github.com/s3tools/s3cmd)
+- [s3cmd 사용 가이드](https://s3tools.org/usage)
