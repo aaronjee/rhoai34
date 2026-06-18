@@ -243,6 +243,161 @@ compiler.Compiler().compile(
 **UI 실행** (권장): Quick Start 참조  
 **SDK 실행** (Advanced): `kfp.client.Client().create_run_from_pipeline_package('pipeline.yaml')`
 
+## Pipeline Naming 규칙 및 권장사항
+
+Kubeflow Pipelines는 Kubernetes 위에서 실행되므로 **DNS-1123 subdomain naming 규칙**을 준수해야 합니다.
+
+### 필수 규칙 (Kubernetes DNS-1123)
+
+| 항목 | 규칙 | 예시 |
+|------|------|------|
+| **문자** | 소문자 영숫자, 하이픈(-), 점(.) 만 허용 | `iris-pipeline`, `ml-v1.0` |
+| **시작/끝** | 영숫자로 시작하고 끝나야 함 | ✅ `my-pipeline` ❌ `-pipeline-` |
+| **길이** | 최대 253자 | `my-very-long-pipeline-name...` (253자 이내) |
+| **대문자** | 사용 불가 | ❌ `Iris-Pipeline` ✅ `iris-pipeline` |
+| **특수문자** | 언더스코어(_), 공백 등 사용 불가 | ❌ `iris_pipeline` ✅ `iris-pipeline` |
+
+### Pipeline Name (@dsl.pipeline)
+
+**현재 예제**:
+```python
+@dsl.pipeline(
+    name='iris-classification-pipeline',  # ✅ kebab-case
+    description='Iris 분류 파이프라인 (S3 데이터 로드, CPU 기반, OpenShift AI 3.4)'
+)
+```
+
+**권장 패턴**:
+- `<use-case>-<model-type>-pipeline`: `fraud-detection-xgboost-pipeline`
+- `<dataset>-<task>-pipeline`: `iris-classification-pipeline`
+- `<team>-<project>-v<version>`: `datascience-iris-v1`
+
+**피해야 할 패턴**:
+- ❌ `Iris_Classification_Pipeline` (대문자, 언더스코어)
+- ❌ `iris classification` (공백)
+- ❌ `pipeline` (너무 일반적)
+- ❌ `-my-pipeline-` (하이픈으로 시작/끝)
+
+### Component Function Names (Python 함수)
+
+Component 함수명은 **Python naming convention (snake_case)** 을 따릅니다.
+
+**현재 예제**:
+```python
+def load_data_from_s3(...)  # ✅ snake_case
+def preprocess(...)
+def train(...)
+def evaluate(...)
+```
+
+**권장 패턴**:
+- 동사로 시작: `load_data`, `preprocess_features`, `train_model`, `evaluate_metrics`
+- 명확하고 구체적: `load_from_s3` → `load_data_from_s3`
+- 일관된 접미사: `_task`, `_step`, `_component` (선택 사항)
+
+### Pipeline Parameters
+
+파라미터명도 **snake_case** 를 사용하되, 의미가 명확해야 합니다.
+
+**현재 예제**:
+```python
+def iris_classification_pipeline(
+    s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv'  # ✅
+)
+```
+
+**권장 패턴**:
+- `s3_dataset_path`, `model_version`, `train_test_split_ratio`
+- `input_bucket`, `output_bucket`, `learning_rate`
+
+**피해야 할 패턴**:
+- ❌ `path` (너무 모호)
+- ❌ `S3Path` (camelCase)
+- ❌ `s3-path` (kebab-case는 Python 변수로 사용 불가)
+
+### Task Variable Names (pipeline 함수 내부)
+
+Task 변수는 컴포넌트 간 연결을 추적하기 쉽도록 명명합니다.
+
+**현재 예제**:
+```python
+load_task = load_data_from_s3(...)        # ✅
+preprocess_task = preprocess(...)         # ✅
+train_task = train(...)                   # ✅
+evaluate(...)  # 반환값 미사용 시 변수 생략 가능
+```
+
+**권장 패턴**:
+- `<component-name>_task` 또는 `<component-name>_op`
+- 일관된 접미사 사용 (task, op, step 중 선택)
+
+### Artifact Names (Input/Output)
+
+Artifact 파라미터명은 **역할을 명확히** 표현합니다.
+
+**현재 예제**:
+```python
+def preprocess(
+    dataset_in: Input[Dataset],      # ✅ 입력 명확
+    train_data_out: Output[Dataset], # ✅ 출력 명확
+    test_data_out: Output[Dataset]   # ✅ 출력 명확
+)
+```
+
+**권장 패턴**:
+- 입력: `<name>_in` (dataset_in, model_in)
+- 출력: `<name>_out` (dataset_out, model_out, metrics_out)
+- 또는: `input_<name>`, `output_<name>`
+
+### Run Name (실행 시 지정)
+
+OpenShift AI UI 또는 SDK로 파이프라인 실행 시 Run name을 지정할 수 있습니다.
+
+**권장 패턴**:
+- `<pipeline-name>-<timestamp>`: `iris-pipeline-20240615-1430`
+- `<pipeline-name>-<experiment>`: `iris-pipeline-experiment-1`
+- `<user>-<pipeline-name>`: `aaron-iris-pipeline`
+
+**UI 기본값**: 
+- OpenShift AI는 자동으로 타임스탬프 기반 이름 생성
+- 예: `iris-classification-pipeline-2024-06-15-14-30-45`
+
+### 버전 관리 권장사항
+
+파이프라인 버전을 관리할 때:
+
+**Option 1: Pipeline name에 버전 포함**
+```python
+@dsl.pipeline(
+    name='iris-classification-pipeline-v1',
+    description='Iris 분류 파이프라인 v1.0'
+)
+```
+
+**Option 2: Description에 버전 명시**
+```python
+@dsl.pipeline(
+    name='iris-classification-pipeline',
+    description='Iris 분류 파이프라인 (v1.0.0, 2024-06-15)'
+)
+```
+
+**Option 3: Git tag와 연동**
+- Git tag: `v1.0.0`, `v1.1.0-rc1`
+- Pipeline name: `iris-classification-pipeline` (고정)
+- Pipeline YAML 파일명: `pipeline-v1.0.0.yaml`
+
+### 요약 표
+
+| 항목 | Naming Convention | 예시 |
+|------|-------------------|------|
+| **Pipeline Name** | kebab-case, DNS-1123 | `iris-classification-pipeline` |
+| **Component Function** | snake_case (Python) | `load_data_from_s3`, `train_model` |
+| **Parameters** | snake_case (Python) | `s3_dataset_path`, `learning_rate` |
+| **Task Variables** | snake_case + _task | `load_task`, `preprocess_task` |
+| **Artifact I/O** | snake_case + _in/_out | `dataset_in`, `model_out` |
+| **Run Name** | kebab-case + timestamp | `iris-pipeline-20240615-1430` |
+
 ## Troubleshooting
 
 ### s3cmd 설치 실패 (Red Hat Python Index에서 찾을 수 없음)
