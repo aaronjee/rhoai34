@@ -23,17 +23,31 @@ def load_data_from_s3(
     aws_s3_endpoint: str,
     dataset_out: Output[Dataset]
 ):
-    """Load dataset from S3 bucket"""
     import pandas as pd
+    import boto3
+    from botocore.client import Config
+    from io import BytesIO
     
     print(f"Loading data from S3: {s3_path}")
     print(f"Using S3 endpoint: {aws_s3_endpoint}")
     
-    df = pd.read_csv(s3_path, storage_options={
-        'key': aws_access_key_id,
-        'secret': aws_secret_access_key,
-        'client_kwargs': {'endpoint_url': aws_s3_endpoint}
-    })
+    s3_path_parts = s3_path.replace('s3://', '').split('/', 1)
+    bucket = s3_path_parts[0]
+    key = s3_path_parts[1] if len(s3_path_parts) > 1 else ''
+    
+    print(f"Bucket: {bucket}, Key: {key}")
+    
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=aws_s3_endpoint,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        config=Config(signature_version='s3v4', s3={'addressing_style': 'path'}),
+        use_ssl=False
+    )
+    
+    response = s3_client.get_object(Bucket=bucket, Key=key)
+    df = pd.read_csv(BytesIO(response['Body'].read()))
     
     df.to_csv(dataset_out.path, index=False)
     print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
