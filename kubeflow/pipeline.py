@@ -17,7 +17,7 @@ from kfp.dsl import Output, Input, Dataset, Model, Metrics
     packages_to_install=['scikit-learn>=1.3.0', 'pandas>=2.0.0', 'numpy>=1.24.0', 's3fs>=2023.1.0', 'boto3>=1.28.0']
 )
 def load_data_from_s3(s3_path: str, dataset_out: Output[Dataset]):
-    """S3 버킷에서 데이터셋 로드"""
+    """Load dataset from S3 bucket"""
     import pandas as pd
     import os
     
@@ -79,7 +79,7 @@ def train(
     train_data_in: Input[Dataset],
     model_out: Output[Model]
 ):
-    """LogisticRegression 학습"""
+    """Train LogisticRegression model"""
     import pandas as pd
     from sklearn.linear_model import LogisticRegression
     import pickle
@@ -107,7 +107,7 @@ def evaluate(
     test_data_in: Input[Dataset],
     metrics_out: Output[Metrics]
 ):
-    """정확도 및 Confusion Matrix 출력"""
+    """Evaluate model accuracy and confusion matrix"""
     import pandas as pd
     import pickle
     from sklearn.metrics import accuracy_score, confusion_matrix
@@ -131,12 +131,12 @@ def evaluate(
 
 @dsl.pipeline(
     name='iris-classification-pipeline',
-    description='Iris 분류 파이프라인 (S3 데이터 로드, CPU 기반, OpenShift AI 3.4)'
+    description='Iris classification pipeline with S3 data loading, CPU-based runtime for OpenShift AI 3.4'
 )
 def iris_classification_pipeline(
     s3_dataset_path: str = 's3://handon-kubeflow/dataset/iris.csv'
 ):
-    """4개 컴포넌트 파이프라인 (S3에서 데이터 로드)"""
+    """4-component pipeline with S3 data loading"""
     load_task = load_data_from_s3(s3_path=s3_dataset_path)
     preprocess_task = preprocess(dataset_in=load_task.outputs['dataset_out'])
     train_task = train(train_data_in=preprocess_task.outputs['train_data_out'])
