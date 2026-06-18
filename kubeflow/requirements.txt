@@ -1,0 +1,11 @@
+# Kubeflow Pipelines SDK - OpenShift AI 3.4 호환
+kfp>=2.14.3,<3.0.0
+
+# 머신러닝 라이브러리
+scikit-learn>=1.3.0
+
+# 데이터 처리
+pandas>=2.0.0
+
+# 수치 연산
+numpy>=1.24.0

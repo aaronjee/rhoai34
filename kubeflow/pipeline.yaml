@@ -1,0 +1,279 @@
+# PIPELINE DEFINITION
+# Name: iris-classification-pipeline
+# Description: Iris 분류 파이프라인 (CPU 기반, OpenShift AI 3.4)
+components:
+  comp-evaluate:
+    executorLabel: exec-evaluate
+    inputDefinitions:
+      artifacts:
+        model_in:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        test_data_in:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        metrics_out:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+  comp-load-data:
+    executorLabel: exec-load-data
+    outputDefinitions:
+      artifacts:
+        dataset_out:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-preprocess:
+    executorLabel: exec-preprocess
+    inputDefinitions:
+      artifacts:
+        dataset_in:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        test_data_out:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train_data_out:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-train:
+    executorLabel: exec-train
+    inputDefinitions:
+      artifacts:
+        train_data_in:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        model_out:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-evaluate:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'scikit-learn>=1.3.0'\
+          \ 'pandas>=2.0.0' 'numpy>=1.24.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluate(\n    model_in: Input[Model],\n    test_data_in: Input[Dataset],\n\
+          \    metrics_out: Output[Metrics]\n):\n    \"\"\"\uC815\uD655\uB3C4 \uBC0F\
+          \ Confusion Matrix \uCD9C\uB825\"\"\"\n    import pandas as pd\n    import\
+          \ pickle\n    from sklearn.metrics import accuracy_score, confusion_matrix\n\
+          \n    test_df = pd.read_csv(test_data_in.path)\n    X_test = test_df.drop('target',\
+          \ axis=1)\n    y_test = test_df['target']\n\n    with open(model_in.path,\
+          \ 'rb') as f:\n        clf = pickle.load(f)\n\n    y_pred = clf.predict(X_test)\n\
+          \    accuracy = accuracy_score(y_test, y_pred)\n    cm = confusion_matrix(y_test,\
+          \ y_pred)\n\n    metrics_out.log_metric('accuracy', accuracy)\n\n    print(f\"\
+          Accuracy: {accuracy:.4f}\")\n    print(f\"Confusion Matrix:\\n{cm}\")\n\n"
+        image: quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523
+    exec-load-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - load_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'scikit-learn>=1.3.0'\
+          \ 'pandas>=2.0.0' 'numpy>=1.24.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef load_data(dataset_out: Output[Dataset]):\n    \"\"\"Iris \uB370\
+          \uC774\uD130\uC14B \uB85C\uB4DC\"\"\"\n    from sklearn.datasets import\
+          \ load_iris\n    import pandas as pd\n\n    iris = load_iris()\n    df =\
+          \ pd.DataFrame(\n        data=iris.data,\n        columns=iris.feature_names\n\
+          \    )\n    df['target'] = iris.target\n\n    df.to_csv(dataset_out.path,\
+          \ index=False)\n    print(f\"Loaded {len(df)} samples with {len(iris.feature_names)}\
+          \ features\")\n\n"
+        image: quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523
+    exec-preprocess:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - preprocess
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'scikit-learn>=1.3.0'\
+          \ 'pandas>=2.0.0' 'numpy>=1.24.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef preprocess(\n    dataset_in: Input[Dataset],\n    train_data_out:\
+          \ Output[Dataset],\n    test_data_out: Output[Dataset]\n):\n    \"\"\"Train/Test\
+          \ split (80/20)\"\"\"\n    import pandas as pd\n    from sklearn.model_selection\
+          \ import train_test_split\n\n    df = pd.read_csv(dataset_in.path)\n   \
+          \ X = df.drop('target', axis=1)\n    y = df['target']\n\n    X_train, X_test,\
+          \ y_train, y_test = train_test_split(\n        X, y, test_size=0.2, random_state=42\n\
+          \    )\n\n    train_df = X_train.copy()\n    train_df['target'] = y_train\n\
+          \    test_df = X_test.copy()\n    test_df['target'] = y_test\n\n    train_df.to_csv(train_data_out.path,\
+          \ index=False)\n    test_df.to_csv(test_data_out.path, index=False)\n\n\
+          \    print(f\"Train samples: {len(train_df)}, Test samples: {len(test_df)}\"\
+          )\n\n"
+        image: quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523
+    exec-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'scikit-learn>=1.3.0'\
+          \ 'pandas>=2.0.0' 'numpy>=1.24.0'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train(\n    train_data_in: Input[Dataset],\n    model_out: Output[Model]\n\
+          ):\n    \"\"\"LogisticRegression \uD559\uC2B5\"\"\"\n    import pandas as\
+          \ pd\n    from sklearn.linear_model import LogisticRegression\n    import\
+          \ pickle\n\n    train_df = pd.read_csv(train_data_in.path)\n    X_train\
+          \ = train_df.drop('target', axis=1)\n    y_train = train_df['target']\n\n\
+          \    clf = LogisticRegression(max_iter=200, random_state=42)\n    clf.fit(X_train,\
+          \ y_train)\n\n    with open(model_out.path, 'wb') as f:\n        pickle.dump(clf,\
+          \ f)\n\n    print(f\"Model trained with {len(X_train)} samples\")\n    print(f\"\
+          Model coefficients shape: {clf.coef_.shape}\")\n\n"
+        image: quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.11-2024a-20240523
+pipelineInfo:
+  description: "Iris \uBD84\uB958 \uD30C\uC774\uD504\uB77C\uC778 (CPU \uAE30\uBC18\
+    , OpenShift AI 3.4)"
+  name: iris-classification-pipeline
+root:
+  dag:
+    tasks:
+      evaluate:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate
+        dependentTasks:
+        - preprocess
+        - train
+        inputs:
+          artifacts:
+            model_in:
+              taskOutputArtifact:
+                outputArtifactKey: model_out
+                producerTask: train
+            test_data_in:
+              taskOutputArtifact:
+                outputArtifactKey: test_data_out
+                producerTask: preprocess
+        taskInfo:
+          name: evaluate
+      load-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-load-data
+        taskInfo:
+          name: load-data
+      preprocess:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-preprocess
+        dependentTasks:
+        - load-data
+        inputs:
+          artifacts:
+            dataset_in:
+              taskOutputArtifact:
+                outputArtifactKey: dataset_out
+                producerTask: load-data
+        taskInfo:
+          name: preprocess
+      train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train
+        dependentTasks:
+        - preprocess
+        inputs:
+          artifacts:
+            train_data_in:
+              taskOutputArtifact:
+                outputArtifactKey: train_data_out
+                producerTask: preprocess
+        taskInfo:
+          name: train
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1
